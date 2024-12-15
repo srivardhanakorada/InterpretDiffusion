@@ -219,7 +219,7 @@ class PNDMScheduler(SchedulerMixin, ConfigMixin):
             ].copy()  # we copy to avoid having negative strides which are not supported by torch.from_numpy
 
         timesteps = np.concatenate([self.prk_timesteps, self.plms_timesteps]).astype(np.int64)
-        self.timesteps = torch.from_numpy(timesteps).to(device)
+        self.timesteps = torch.tensor(timesteps, dtype=torch.int64, device=device)
 
         self.ets = []
         self.counter = 0

@@ -1,98 +1,58 @@
-import numpy as np
 import os
 import json
 from tqdm import tqdm
-
 from diffusers import StableDiffusionPipeline
 
-"""This script creates the dataset to train concept vectors. 
-This include generating images from prompts using Stable Diffusion 
-and saving the images and labels in a folder."""
+def create_concept_to_id_mapping():
+    concepts = ["female", "young-female", "old-female"]
+    return {concept: idx for idx, concept in enumerate(concepts)}
 
+def repeat_elements(elements, n):
+    return [element for element in elements for _ in range(n)]
 
-def update_concept_dict():
-    concept_dict = ["woman", "man", "young", "old"]
-    concept_dict = {c:i for i,c in enumerate(concept_dict)}
-    return concept_dict
+class DatasetGenerator:
+    
+    def __init__(self, config):
+        self.output_dir = config.output_dir
+        self.prompts = config.prompts
+        self.corrupted_prompts_and_targets = config.corrupted_prompts_and_targets
+        self.num_samples = config.num_samples
+        print(f"Generating {self.num_samples} samples per concept in {self.output_dir}")
 
-
-def repeat_ntimes(x, n):
-    return [item for item in x for i in range(n)]
-
-
-class DataCreator:
-    def __init__(self, cfg):
-        self.root_dir = cfg.root_dir
-        self.image_prompt = repeat_ntimes(cfg.image_prompt, cfg.num_samples)
-        self.input_prompt_and_target_concept = repeat_ntimes(cfg.input_prompt_and_target_concept, cfg.num_samples)
-        self.validation_prompt_and_concept = cfg.validation_prompt_and_concept
-        print(f"to create {len(self.image_prompt)} total number of samples in {cfg.root_dir}")
-
-    def create_images(self, num_inference_steps=30):
-        pipe = StableDiffusionPipeline.from_pretrained(
-            "CompVis/stable-diffusion-v1-4", 
-            )
+    def generate_images(self, num_inference_steps=30):
+        pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
         pipe = pipe.to("cuda")
-        pipe.safety_checker=None
+        pipe.safety_checker = None
         pipe.set_progress_bar_config(disable=True)
-
-        os.makedirs(self.root_dir, exist_ok=True)
-        for idx, prompt in tqdm(enumerate(self.image_prompt), total=len(self.image_prompt)):
-            if isinstance(prompt, list) or isinstance(prompt, tuple):
-                output = pipe(prompt[0], negative_prompt=prompt[1], num_inference_steps=num_inference_steps, return_dict=True)
-            else:
-                output = pipe(prompt, num_inference_steps=num_inference_steps, return_dict=True)
-            image = output[0][0]
-            image.save(self.root_dir+"/"+f"{idx}.jpg")
-
-    def create_labels(self,):
-        os.makedirs(self.root_dir, exist_ok=True)
-        json.dump(self.input_prompt_and_target_concept, open(self.root_dir + "/labels.json", "w"))
-        json.dump(self.validation_prompt_and_concept, open(self.root_dir + "/test.json", "w"))
-        json.dump(update_concept_dict(), open(self.root_dir + "/concept_dict.json", "w"))
+        for concept_idx, (prompt, corrupted_target) in enumerate(zip(self.prompts, self.corrupted_prompts_and_targets)):
+            concept_dir = os.path.join(self.output_dir, f"concept_{concept_idx}")
+            os.makedirs(concept_dir, exist_ok=True)
+            print(f"Generating images for concept {concept_idx}: '{prompt}' in {concept_dir}")
+            expanded_prompts = repeat_elements([prompt], self.num_samples)
+            expanded_targets = repeat_elements([corrupted_target], self.num_samples)
+            for idx, p in tqdm(enumerate(expanded_prompts), total=len(expanded_prompts), desc=f"Concept {concept_idx}"):
+                output = pipe(p, num_inference_steps=num_inference_steps, return_dict=True)
+                image = output.images[0]
+                image.save(f"{concept_dir}/{idx}.jpg")
+            json.dump(expanded_targets, open(f"{concept_dir}/labels.json", "w"))
+        json.dump(create_concept_to_id_mapping(), open(f"{self.output_dir}/concept_dict.json", "w"))
 
     def run(self):
-        self.create_labels()
-        self.create_images()
+        self.generate_images()
 
-
-class Cfg:
-    root_dir="datasets/person"
-    num_samples=1000
-
-    image_prompt = [
-        "a woman",
+class DatasetConfig:
+    output_dir = "data/female"
+    num_samples = 1000
+    prompts = [
+        "a female doctor",
+        "a young-female doctor",
+        "a old-female doctor"
+    ]
+    corrupted_prompts_and_targets = [
+        [["a doctor", ["female"]]],
+        [["a doctor", ["young-female"]]],
+        [["a doctor", ["old-female"]]],
     ]
 
-    input_prompt_and_target_concept = [
-        [
-            ["a person", ["woman"]],
-         ],
-    ]
-
-    validation_prompt_and_concept = ["a person", ["woman"]]
-
-
-class CfgBatch:
-    root_dir="datasets/person"
-    num_samples=1000
-
-    image_prompt = [
-        "a woman",
-        "a man",
-    ]
-
-    input_prompt_and_target_concept = [
-        [
-            ["a person", ["woman"]],
-         ],
-        [
-            ["a person", ["man"]],
-         ],
-    ]
-
-    validation_prompt_and_concept = ["a person", ["woman", "man"]]
-
-
-creator=DataCreator(Cfg)
-creator.run()
+generator = DatasetGenerator(DatasetConfig)
+generator.run()

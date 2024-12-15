@@ -24,12 +24,10 @@ def load_weights(model, path):
 
 def _count_trainable_parameters(model):
     total=sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("Num trainable params: ", total)
     return total
 
 def _count_parameters(state_dict):
     total=sum(p.numel() for p in state_dict.values())
-    print("Num trainable params: ", total)
     return total
 
 def _load_partial_state_dict(model, checkpoint):

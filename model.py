@@ -1,7 +1,4 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
 
 class MLP(nn.Module):
     def __init__(self, input_dim=100, hidden_dim=1280, output_ch=1280, resolution=1, nonlinearity="relu"):
@@ -15,7 +12,6 @@ class MLP(nn.Module):
         x = x.to(self.fc1.weight.dtype)
         x = self.fc1(x)
         return x.view(x.shape[0], self.output_ch, self.resolution, self.resolution)
-
 
 model_types={
     "MLP":MLP,
