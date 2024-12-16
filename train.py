@@ -158,5 +158,5 @@ def main(device):
     print("Concept Vector (fc1 weights):", concept_vector)
 
 if __name__ == "__main__":
-    device = "cuda:0"
+    device = "cuda"
     main(device)

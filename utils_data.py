@@ -89,7 +89,7 @@ def parse_concept(input_concept):
     
     return input_concept
 
-
+## SPECIAL
 def get_test_data(data_dir, given_prompt=None, given_concept=None, with_baseline=True, device='cuda', max_concept_length=100):
     """
     data_dir: path to data file
@@ -114,6 +114,7 @@ def get_test_data(data_dir, given_prompt=None, given_concept=None, with_baseline
     return prompt, concept
 
 
+## SPECIAL
 def get_i2p_data(data_dir=None, given_prompt=None, given_concept=None, with_baseline=True, device='cuda', max_concept_length=100):
     import pandas as pd
 

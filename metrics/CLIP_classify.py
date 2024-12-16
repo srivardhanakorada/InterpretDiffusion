@@ -30,7 +30,7 @@ def CLIP_classification_function(im_dir, attributes, model, processor, from_case
     images = [im for im in images if '.png' in im or '.jpg' in im]
     images = sorted_nicely(images)
     ratios = {}
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' ## SPECIAL
     
     for image in images:
         try:
@@ -65,7 +65,7 @@ def CLIP_classification_function(im_dir, attributes, model, processor, from_case
 
 
 def evaluate_winobias(args):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' ## SPECIAL
     clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     clip_model.to(device)
@@ -98,7 +98,7 @@ def evaluate_winobias(args):
 
 
 def evaluate(args):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda' ## SPECIAL
     clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     clip_model.to(device)

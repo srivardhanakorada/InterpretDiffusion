@@ -104,7 +104,7 @@ def main():
     mlp=model_types[args.model_type](resolution=args.resolution//64)
     unet.set_controlnet(mlp)
     load_model(unet, args.output_dir+'/unet.pth')
-    device=torch.device('cuda')
+    device=torch.device('cuda') ## SPECIAL
     model=StableDiffusionPipeline(
         vae=vae,
         text_encoder=text_encoder,
@@ -135,7 +135,7 @@ def main():
         raise NotImplementedError(args.evaluation_type)
 
 def predict_cond(model, prompt, seed, condition, img_size,num_inference_steps=50,interpolator=None, negative_prompt=None):
-    generator = torch.Generator("cuda").manual_seed(seed) if seed is not None else None
+    generator = torch.Generator("cuda").manual_seed(seed) if seed is not None else None ## SPECIAL
     output = model(prompt=prompt, height=img_size, width=img_size, num_inference_steps=num_inference_steps, generator=generator, controlnet_cond=condition,controlnet_interpolator=interpolator,negative_prompt=negative_prompt)
     image = output[0][0]
     return image
