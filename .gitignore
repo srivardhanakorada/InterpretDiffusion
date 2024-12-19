@@ -163,9 +163,7 @@ wandb
 
 
 datasets/
-
 diffusers
-
 data
-
 archive
+results

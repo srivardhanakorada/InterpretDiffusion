@@ -1,12 +1,10 @@
 from PIL import Image
-import requests
-import os, glob
+import os
 import pandas as pd
 import numpy as np
 import re
 from transformers import CLIPProcessor, CLIPModel
 import argparse
-import torch
 # taken from https://github.com/rohitgandikota/erasing/tree/main/eval-scripts
 
 def sorted_nicely( l ):

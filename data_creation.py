@@ -1,30 +1,35 @@
 import os
 import json
 from tqdm import tqdm
+import argparse
 from diffusers import StableDiffusionPipeline
 
-def create_concept_to_id_mapping():
-    concepts = ["female", "young-female", "old-female"]
-    return {concept: idx for idx, concept in enumerate(concepts)}
+def load_config(config_path):
+    with open(config_path, 'r') as file:
+        return json.load(file)
 
-def repeat_elements(elements, n):
-    return [element for element in elements for _ in range(n)]
+def create_concept_to_id_mapping(concepts): return {concept: idx for idx, concept in enumerate(concepts)}
+
+def repeat_elements(elements, n): return [element for element in elements for _ in range(n)]
 
 class DatasetGenerator:
     
     def __init__(self, config):
-        self.output_dir = config.output_dir
-        self.prompts = config.prompts
-        self.corrupted_prompts_and_targets = config.corrupted_prompts_and_targets
-        self.num_samples = config.num_samples
+        self.output_dir = config["output_dir"]
+        self.prompts = config["prompts"]
+        self.corrupted_prompts_and_targets = config["corrupted_prompts_and_targets"]
+        self.validation_prompts = config["validation_prompts"]
+        self.num_samples = config["num_samples"]
+        self.device = config["device"]
         print(f"Generating {self.num_samples} samples per concept in {self.output_dir}")
 
     def generate_images(self, num_inference_steps=30):
         pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
-        pipe = pipe.to("cuda")
+        pipe = pipe.to(self.device)
         pipe.safety_checker = None
         pipe.set_progress_bar_config(disable=True)
-        for concept_idx, (prompt, corrupted_target) in enumerate(zip(self.prompts, self.corrupted_prompts_and_targets)):
+        for concept_idx, (prompt, corrupted_target, validation_prompt) in enumerate(
+                zip(self.prompts, self.corrupted_prompts_and_targets, self.validation_prompts)):
             concept_dir = os.path.join(self.output_dir, f"concept_{concept_idx}")
             os.makedirs(concept_dir, exist_ok=True)
             print(f"Generating images for concept {concept_idx}: '{prompt}' in {concept_dir}")
@@ -35,24 +40,18 @@ class DatasetGenerator:
                 image = output.images[0]
                 image.save(f"{concept_dir}/{idx}.jpg")
             json.dump(expanded_targets, open(f"{concept_dir}/labels.json", "w"))
-        json.dump(create_concept_to_id_mapping(), open(f"{self.output_dir}/concept_dict.json", "w"))
+            json.dump(validation_prompt, open(f"{concept_dir}/test.json", "w"))
+        concepts = [target[0][1][0] for target in self.corrupted_prompts_and_targets]
+        json.dump(create_concept_to_id_mapping(concepts), open(f"{self.output_dir}/concept_dict.json", "w"))
 
-    def run(self):
-        self.generate_images()
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_path", type=str, required=True)
+    return parser.parse_args()
 
-class DatasetConfig:
-    output_dir = "data/female"
-    num_samples = 1000
-    prompts = [
-        "a female doctor",
-        "a young-female doctor",
-        "a old-female doctor"
-    ]
-    corrupted_prompts_and_targets = [
-        [["a doctor", ["female"]]],
-        [["a doctor", ["young-female"]]],
-        [["a doctor", ["old-female"]]],
-    ]
-
-generator = DatasetGenerator(DatasetConfig)
-generator.run()
+if __name__ == "__main__":
+    args = parse_args()
+    config_path = args.config_path
+    config = load_config(config_path)
+    generator = DatasetGenerator(config)
+    generator.generate_images()
