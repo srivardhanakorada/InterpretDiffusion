@@ -5,8 +5,7 @@ import argparse
 from diffusers import StableDiffusionPipeline
 
 def load_config(config_path):
-    with open(config_path, 'r') as file:
-        return json.load(file)
+    with open(config_path, 'r') as file: return json.load(file)
 
 def create_concept_to_id_mapping(concepts): return {concept: idx for idx, concept in enumerate(concepts)}
 
@@ -28,8 +27,7 @@ class DatasetGenerator:
         pipe = pipe.to(self.device)
         pipe.safety_checker = None
         pipe.set_progress_bar_config(disable=True)
-        for concept_idx, (prompt, corrupted_target, validation_prompt) in enumerate(
-                zip(self.prompts, self.corrupted_prompts_and_targets, self.validation_prompts)):
+        for concept_idx, (prompt, corrupted_target, validation_prompt) in enumerate(zip(self.prompts, self.corrupted_prompts_and_targets, self.validation_prompts)):
             concept_dir = os.path.join(self.output_dir, f"concept_{concept_idx}")
             os.makedirs(concept_dir, exist_ok=True)
             print(f"Generating images for concept {concept_idx}: '{prompt}' in {concept_dir}")
@@ -51,7 +49,5 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    config_path = args.config_path
-    config = load_config(config_path)
-    generator = DatasetGenerator(config)
-    generator.generate_images()
+    config = load_config(args.config_path)
+    DatasetGenerator(config).generate_images()
