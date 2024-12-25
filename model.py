@@ -10,9 +10,7 @@ class MLP(nn.Module):
 
     def forward(self, x, x_ts):
         x = x.to(self.fc1.weight.dtype)
-        x = self.fc1(x)
-        return x.view(x.shape[0], self.output_ch, self.resolution, self.resolution)
+        x = self.fc1(x)  # Shape is b.s * 81920
+        return x.view(x.shape[0], self.output_ch, self.resolution, self.resolution) # b.s * 1280 * 8 * 8
 
-model_types={
-    "MLP":MLP,
-}
+model_types={ "MLP":MLP}

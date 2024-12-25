@@ -41,19 +41,32 @@ def main():
 
 def predict_cond(model, prompt, seed, condition, device, img_size,num_inference_steps=50,interpolator=None, negative_prompt=None):
     generator = torch.Generator(device).manual_seed(seed) if seed is not None else None
+    concept_vector = None
+    if condition is not None:
+        mlp_output = model.unet.controlnet(condition, None)  # Assuming `controlnet` is the MLP
+        concept_vector = mlp_output.view(mlp_output.size(0), -1).mean(dim=0).detach().cpu()
     output = model(prompt=prompt, height=img_size, width=img_size, num_inference_steps=num_inference_steps, generator=generator, controlnet_cond=condition,controlnet_interpolator=interpolator,negative_prompt=negative_prompt)
     image = output[0][0]
-    return image
+    return image, concept_vector
 
 def evaluate(model, dataloader, args):
-    save_image_dir=args.output_dir+'/'+args.image_dir
+    save_image_dir = os.path.join(args.output_dir, args.image_dir)
+    save_vector_dir = os.path.join(args.output_dir, args.vector_dir)
     os.makedirs(save_image_dir, exist_ok=True)
-    for j in range(args.num_test_samples):
-        images=[]
-        seed=j
-        for prompt, concept in zip(*dataloader): images.append(predict_cond(model=model, prompt=prompt, seed=seed, condition=concept, device = args.device, img_size=args.resolution,num_inference_steps=args.num_inference_steps,negative_prompt=args.negative_prompt))
-        images=show_images(images)
-        images.save(f"{save_image_dir}/eval{j}.jpg")
+    os.makedirs(save_vector_dir, exist_ok=True)
+    images, concept_vectors, seed = [], [], 0
+    for prompt, concept in zip(*dataloader):
+        for _ in range(args.num_test_samples):
+            image, concept_vector = predict_cond(model=model,prompt=prompt,seed=seed,condition=concept,device=args.device,img_size=args.resolution,num_inference_steps=args.num_inference_steps,negative_prompt=args.negative_prompt)
+            images.append(image)
+            if concept_vector is not None : concept_vectors.append(concept_vector)
+            seed += 1
+    images = show_images(images)
+    images.save(f"{save_image_dir}/eval.jpg")
+    concept_vectors = torch.stack(concept_vectors)
+    torch.save(concept_vectors, f"{save_vector_dir}/concept_vectors.pt")
+    avg_concept_vector = concept_vectors.mean(dim=0)
+    torch.save(avg_concept_vector, f"{save_vector_dir}/avg_concept_vector.pt")
 
 if __name__ == "__main__":
     main()

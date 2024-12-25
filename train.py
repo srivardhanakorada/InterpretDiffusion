@@ -1,14 +1,13 @@
-import math
 import os
 import random
-from tqdm.auto import tqdm
-import matplotlib.pyplot as plt
-from ruamel.yaml import YAML
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torchvision import transforms
+from tqdm.auto import tqdm
+import matplotlib.pyplot as plt
+from ruamel.yaml import YAML
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from diffusers.optimization import get_scheduler
 from transformers import CLIPTextModel, CLIPTokenizer
@@ -17,7 +16,9 @@ from config import parse_args
 from utils.utils_model import save_model
 from utils.utils_data import get_dataloader
 
+
 def main():
+    
     def tokenize_captions(examples, is_train=True):
         captions = []
         for caption in examples:
@@ -37,6 +38,7 @@ def main():
         padded_tokens = tokenizer.pad({"input_ids": input_ids}, padding=True, return_tensors="pt")
         input_conditions = torch.stack([example[2] for example in examples])
         return {"pixel_values": pixel_values,"input_ids": padded_tokens.input_ids,"attention_mask": padded_tokens.attention_mask,"input_conditions": input_conditions,}
+    
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
     yaml = YAML()
@@ -49,29 +51,25 @@ def main():
     text_encoder.requires_grad_(False)
     unet.requires_grad_(False)
     mlp=model_types["MLP"](resolution=args.resolution//64)
-    unet.set_controlnet(mlp)
-    optimizer = torch.optim.Adam(unet.parameters(),lr=args.learning_rate,betas=(args.adam_beta1, args.adam_beta2),weight_decay=args.adam_weight_decay,eps=args.adam_epsilon,)
+    unet.set_controlnet(mlp) ## Opposed to element wise addition in the paper
+    
+    optimizer = torch.optim.Adam(unet.parameters(),lr=args.learning_rate,betas=(args.adam_beta1, args.adam_beta2),weight_decay=args.adam_weight_decay,eps=args.adam_epsilon)
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
     train_transforms = transforms.Compose([transforms.Resize((args.resolution, args.resolution), interpolation=transforms.InterpolationMode.BILINEAR), transforms.RandomCrop(args.resolution),transforms.RandomHorizontalFlip(), transforms.Lambda(lambda x: x),transforms.ToTensor(),transforms.Normalize([0.5], [0.5]),])
     train_dataloader = get_dataloader(args.train_data_dir, batch_size=args.train_batch_size, shuffle=True,transform=train_transforms, tokenizer=tokenize_captions, collate_fn=collate_fn,num_workers=4, max_concept_length=100, select="random")
-    overrode_max_train_steps = False
-    num_update_steps_per_epoch = len(train_dataloader)
-    if args.max_train_steps is None:
-        args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-        overrode_max_train_steps = True
+    num_update_steps_per_epoch = len(train_dataloader) ## Since the custom dataloader already divides into batches
+    args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
     lr_scheduler = get_scheduler("constant",optimizer=optimizer, num_warmup_steps=0, num_training_steps=args.max_train_steps)
     weight_dtype = torch.float32
     text_encoder.to(args.device, dtype=weight_dtype)
     vae.to(args.device, dtype=weight_dtype)
-    unet.to(args.device)
-    if overrode_max_train_steps: args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-    args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
+    unet.to(args.device,dtype=weight_dtype) ## Added dtype
     progress_bar = tqdm(range(args.max_train_steps))
     progress_bar.set_description("Steps")
     loss_history=[]
     train_loss = 0.0
-    curious_time=0
     global_step = 0
+
     for _ in range(args.num_train_epochs):
         unet.train()
         for _, batch in enumerate(train_dataloader):
@@ -87,31 +85,23 @@ def main():
             elif noise_scheduler.config.prediction_type == "v_prediction": target = noise_scheduler.get_velocity(latents, noise, timesteps)
             model_pred = unet(noisy_latents, timesteps, encoder_hidden_states, controlnet_cond=batch["input_conditions"].to(args.device)).sample
             loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-            train_loss += loss.item()
-            curious_time += timesteps.sum().item()
+            train_loss = loss.item()
             loss.backward()
             optimizer.step()
             lr_scheduler.step()
             optimizer.zero_grad()
             progress_bar.update(1)
             global_step += 1
-            if global_step%1==0:
-                train_loss = train_loss/1
-                loss_history.append(train_loss)
-                train_loss = 0.0
-                curious_time = 0
-            logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
+            loss_history.append(train_loss)
+            logs = {"loss": loss.detach().item()}
             progress_bar.set_postfix(**logs)
             if global_step >= args.max_train_steps: break
             if global_step % args.num_store_model_steps == 0: save_model(unet, args.output_dir+'/unet.pth')
         save_model(unet, args.output_dir+'/unet.pth')
+
     plt.figure()
     plt.plot(loss_history)
     plt.savefig(args.output_dir+'/loss_history.png')
     plt.close()
-    concept_vector = mlp.fc1.weight.data.cpu().numpy()
-    np.save(os.path.join(args.output_dir, "concept_vector.npy"), concept_vector)
-    print("Concept Vector shape:", concept_vector.shape)
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()

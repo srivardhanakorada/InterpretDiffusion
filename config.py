@@ -7,7 +7,7 @@ def parse_args():
 
     # Model and training setup
     parser.add_argument("--pretrained_model_name_or_path", type=str, default='CompVis/stable-diffusion-v1-4')
-    parser.add_argument("--seed", type=int, default=None)  # TODO: Check Again
+    parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--device", type=str, default="cuda:0")
 
     # Data handling
@@ -33,6 +33,7 @@ def parse_args():
     parser.add_argument("--clip_attributes", type=str, nargs='+') 
     parser.add_argument("--evaluation_type", type=str, default="eval", choices=['eval','interpolate','winobias','i2p'])
     parser.add_argument("--image_dir", type=str, default="images")
+    parser.add_argument("--vector_dir", type=str, default="vectors")
     parser.add_argument("--prompt_file", type=str, default=None)
 
     # Unknown parameters
