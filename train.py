@@ -31,6 +31,7 @@ def main():
         inputs = tokenizer(captions, max_length=tokenizer.model_max_length, padding="do_not_pad", truncation=True)
         input_ids = inputs.input_ids
         return input_ids
+    
     def collate_fn(examples):
         pixel_values = torch.stack([example[0] for example in examples])
         pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()

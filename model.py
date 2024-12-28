@@ -1,6 +1,7 @@
 import torch.nn as nn
 
 class MLP(nn.Module):
+    
     def __init__(self, input_dim=100, hidden_dim=1280, output_ch=1280, resolution=1, nonlinearity="relu"):
         super(MLP, self).__init__()
         output_dim=output_ch*resolution*resolution

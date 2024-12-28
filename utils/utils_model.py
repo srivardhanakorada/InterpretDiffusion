@@ -1,8 +1,5 @@
 import torch
 
-"""Based on the logic that only layers that requires grad are modified and thus saved"""
-
-
 def load_model(model, path):
     checkpoint=torch.load(path)
     _count_parameters(checkpoint)
@@ -31,7 +28,6 @@ def _count_parameters(state_dict):
     return total
 
 def _load_partial_state_dict(model, checkpoint):
-    """checkpoint has to totally match a subset of the model state dict"""
     model_dict = model.state_dict()
     model_dict.update(checkpoint)
     model.load_state_dict(model_dict)

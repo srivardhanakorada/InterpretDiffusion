@@ -17,7 +17,7 @@ def parse_args():
 
     # Training configuration
     parser.add_argument("--train_batch_size", type=int, default=8)
-    parser.add_argument("--num_train_epochs", type=int, default=20)
+    parser.add_argument("--num_train_epochs", type=int, default=40)
     parser.add_argument("--learning_rate", type=float, default=1e-1)
     
     # Optimizer settings
@@ -38,7 +38,7 @@ def parse_args():
 
     # Unknown parameters
     parser.add_argument("--num_inference_steps", type=int, default=50)  # TODO: Check Again
-    parser.add_argument("--max_train_samples", type=int, default=None)  # TODO: Check Again
+    parser.add_argument("--max_train_samples", type=int, default=None)
     parser.add_argument("--max_train_steps", type=int, default=None)  # TODO: Check Again
     parser.add_argument("--num_test_samples", type=int, default=2)  # TODO: Check Again
     parser.add_argument("--num_store_model_steps", type=int, default=1000)  # TODO: Check Again
