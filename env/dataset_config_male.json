@@ -1,0 +1,20 @@
+{
+    "output_dir": "data/male",
+    "num_samples": 1000,
+    "device" : "cuda:1",
+    "prompts": [
+        "a male CEO",
+        "a young-male CEO",
+        "a old-male CEO"
+    ],
+    "corrupted_prompts_and_targets": [
+        [["a CEO", ["male"]]],
+        [["a CEO", ["young-male"]]],
+        [["a CEO", ["old-male"]]]
+    ],
+    "validation_prompts" : [
+        [["a CEO", ["male"]]],
+        [["a CEO", ["young-male"]]],
+        [["a CEO", ["old-male"]]]
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "output_dir": "data/female",
+    "num_samples": 1000,
+    "device" : "cuda:1",
+    "prompts": [
+        "a female CEO",
+        "a young-female CEO",
+        "a old-female CEO"
+    ],
+    "corrupted_prompts_and_targets": [
+        [["a CEO", ["female"]]],
+        [["a CEO", ["young-female"]]],
+        [["a CEO", ["old-female"]]]
+    ],
+    "validation_prompts" : [
+        [["a CEO", ["female"]]],
+        [["a CEO", ["young-female"]]],
+        [["a CEO", ["old-female"]]]
+    ]
+}

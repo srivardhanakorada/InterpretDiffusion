@@ -1,0 +1,20 @@
+{
+    "output_dir": "data/table",
+    "num_samples": 1000,
+    "device" : "cuda:0",
+    "prompts": [
+        "a table",
+        "a wooden-table",
+        "a round-table"
+    ],
+    "corrupted_prompts_and_targets": [
+        [[ "a piece of furniture", ["table"]]],
+        [[ "a piece of furniture", ["wooden-table"]]],
+        [[ "a piece of furniture", ["round-table"]]]
+    ],
+    "validation_prompts" : [
+        [[ "a piece of furniture", ["table"]]],
+        [[ "a piece of furniture", ["wooden-table"]]],
+        [[ "a piece of furniture", ["round-table"]]]
+    ]
+}

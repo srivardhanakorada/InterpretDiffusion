@@ -27,21 +27,18 @@ class DatasetGenerator:
         pipe = pipe.to(self.device)
         pipe.safety_checker = None
         pipe.set_progress_bar_config(disable=True)
-        expanded_prompts, expanded_targets = [], []
-        global_ind = 0
-        os.makedirs(self.output_dir, exist_ok=True)
-        for concept_idx, (prompt, corrupted_target) in enumerate(zip(self.prompts, self.corrupted_prompts_and_targets)):
-            print(f"Generating images for concept {concept_idx}")
-            temp = repeat_elements([prompt], self.num_samples)
-            expanded_prompts.extend(repeat_elements([prompt], self.num_samples))
-            expanded_targets.extend(repeat_elements([corrupted_target], self.num_samples))
-            for _, p in tqdm(enumerate(temp), total=len(expanded_prompts), desc=f"Concept {concept_idx}"):
+        for concept_idx, (prompt, corrupted_target, validation_prompt) in enumerate(zip(self.prompts, self.corrupted_prompts_and_targets, self.validation_prompts)):
+            concept_dir = os.path.join(self.output_dir, f"concept_{concept_idx}")
+            os.makedirs(concept_dir, exist_ok=True)
+            print(f"Generating images for concept {concept_idx}: '{prompt}' in {concept_dir}")
+            expanded_prompts = repeat_elements([prompt], self.num_samples)
+            expanded_targets = repeat_elements([corrupted_target], self.num_samples)
+            for idx, p in tqdm(enumerate(expanded_prompts), total=len(expanded_prompts), desc=f"Concept {concept_idx}"):
                 output = pipe(p, num_inference_steps=num_inference_steps, return_dict=True)
                 image = output.images[0]
-                image.save(f"{self.output_dir}/{global_ind}.jpg")
-                global_ind += 1
-        json.dump(expanded_targets, open(f"{self.output_dir}/labels.json", "w"))
-        json.dump(self.validation_prompts, open(f"{self.output_dir}/test.json", "w"))
+                image.save(f"{concept_dir}/{idx}.jpg")
+            json.dump(expanded_targets, open(f"{concept_dir}/labels.json", "w"))
+            json.dump(validation_prompt, open(f"{concept_dir}/test.json", "w"))
         concepts = [target[0][1][0] for target in self.corrupted_prompts_and_targets]
         json.dump(create_concept_to_id_mapping(concepts), open(f"{self.output_dir}/concept_dict.json", "w"))
 
