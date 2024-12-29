@@ -67,7 +67,7 @@ def parse_concept(input_concept):
 def get_test_data(data_dir, given_prompt=None, given_concept=None, with_baseline=True, device='cuda', max_concept_length=100):
     concept_dict=json.load(open(data_dir+'/concept_dict.json','r'))
     if not given_prompt or not given_concept:
-        prompt, concept=json.load(open(data_dir+'/test.json','r'))
+        prompt, concept=json.load(open(data_dir+'/test.json','r'))[0]
     if given_prompt:
         prompt=given_prompt
     if given_concept:
