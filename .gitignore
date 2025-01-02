@@ -166,3 +166,8 @@ diffusers
 data
 archive
 results
+
+poc/female
+poc/male
+poc/car
+poc/table
